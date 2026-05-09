@@ -1,0 +1,10 @@
+services:
+  downloader:
+    build: .
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ../jellyfin/media/Music:/music
+
+    restart: unless-stopped

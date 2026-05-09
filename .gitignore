@@ -1,7 +1,18 @@
-
-# Ignore environment variable files
+# Environment variables
 .env
 
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
 # Ignore Docker volumes for Jellyfin server
 docker/jellyfin/config/
 docker/jellyfin/cache/

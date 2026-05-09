@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Downloader</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f6f6f6;
+        }
+
+        .container {
+            width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .job {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        img {
+            height: 60px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        .timetextfield {
+            width: 30px;
+        }
+
+        button {
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+<h2>YouTube → Jellyfin Downloader</h2>
+
+<!-- Preview area -->
+<div id="preview"></div>
+
+<!-- Input Form -->
+<form hx-post="/add" hx-target="#job-list" hx-swap="innerHTML">
+
+    <div style="display:flex; gap:10px;">
+        <input name="url" placeholder="YouTube URL"
+            hx-get="/preview"
+            hx-trigger="keyup changed delay:800ms"
+            hx-target="#preview">
+        <button type="submit">Download</button>
+    </div>
+    
+
+
+    <div style="display:flex; gap:10px;">
+        <input class="timetextfield" name="start" inputmode="numeric" placeholder="Start time (e.g. 0:00)" value="0:00">
+        <input name="title" placeholder="Custom title (optional)">
+        <input class="timetextfield" name="end" placeholder="0.0">
+    </div>
+</form>
+
+<h3>Music Download Queue</h3>
+<div id="job-list"
+     hx-get="/jobs"
+     hx-trigger="load, every 2s"
+     hx-swap="innerHTML">
+</div>
+
+</div>
+
+</body>
+</html>

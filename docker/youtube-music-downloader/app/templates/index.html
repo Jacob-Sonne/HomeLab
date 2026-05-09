@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0f11;
+      --surface: #16181c;
+      --surface2: #1e2128;
+      --border: #2a2d35;
+      --border-accent: #3a3d48;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --accent: #f5a623;
+      --accent-dim: #3d2b0a;
+      --red: #e05252;
+      --green: #4caf7d;
+      --blue: #5b9cf6;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--muted); font-weight: 400; }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      margin-left: auto;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ---- Input panel ---- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface2);
+    }
+
+    .panel-header h2 {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+
+    .panel-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .panel-body { padding: 1.25rem; }
+
+    .url-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+    .url-input:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0e0f11;
+      border: none;
+      border-radius: 7px;
+      padding: 0.75rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Settings grid */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 600px) {
+      .settings-grid { grid-template-columns: 1fr; }
+      .url-row { flex-direction: column; }
+    }
+
+    .field label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field select { cursor: pointer; }
+    .field select option { background: var(--surface2); }
+
+    /* ---- Queue ---- */
+    .queue-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .queue-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .thumb {
+      width: 80px;
+      height: 48px;
+      border-radius: 5px;
+      object-fit: cover;
+      background: var(--border);
+      flex-shrink: 0;
+      border: 1px solid var(--border-accent);
+    }
+
+    .thumb-placeholder {
+      width: 80px;
+      height: 48px;
+      border-radius: 5px;
+      background: var(--border);
+      border: 1px solid var(--border-accent);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thumb-placeholder svg { opacity: 0.3; }
+
+    .item-info { flex: 1; min-width: 0; }
+
+    .item-title {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.3rem;
+    }
+
+    .item-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge-waiting  { background: #1e2128; color: var(--muted); border: 1px solid var(--border-accent); }
+    .badge-fetching { background: #1a2340; color: var(--blue); border: 1px solid #2a3d6a; }
+    .badge-downloading { background: var(--accent-dim); color: var(--accent); border: 1px solid #5a3d10; }
+    .badge-done     { background: #0e2a1c; color: var(--green); border: 1px solid #1a4d30; }
+    .badge-error    { background: #2a0e0e; color: var(--red); border: 1px solid #5a1a1a; }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+      font-size: 16px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: var(--red); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .empty-state svg { opacity: 0.15; margin-bottom: 1rem; }
+
+    .preview-container {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      background: var(--bg);
+      border: 1px dashed var(--border-accent);
+    }
+    .preview-container iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .preview-placeholder svg { opacity: 0.2; margin-bottom: 0.25rem; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--red);
+      z-index: 9999;
+      animation: fadeUp 0.2s ease;
+      max-width: 340px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">yt<span>/</span>pull</div>
+  <span style="font-family: var(--mono); font-size: 11px; color: var(--border-accent);">homelab downloader</span>
+  <div class="status-label" id="service-status">connecting…</div>
+  <div class="status-dot" id="status-dot" style="background: var(--muted); box-shadow: none;"></div>
+</header>
+
+<main>
+
+  <!-- Input panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-dot"></div>
+      <h2>New download</h2>
+    </div>
+    <div class="panel-body">
+      <div class="url-row">
+        <input
+          class="url-input"
+          id="url-input"
+          type="text"
+          placeholder="https://www.youtube.com/watch?v=…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-primary" id="add-btn" onclick="addDownload()">+ Queue</button>
+      </div>
+
+      <div class="preview-container">
+        <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+        <div class="preview-placeholder" id="preview-placeholder">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="3" width="20" height="14" rx="2"/><polygon points="10 8 16 11 10 14 10 8" fill="currentColor" stroke="none"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          paste a youtube url to preview
+        </div>
+      </div>
+      <div class="settings-grid">
+        <div class="field">
+          <label>Title (optional)</label>
+          <input id="title-input" type="text" placeholder="Auto-detect" />
+        </div>
+        <div class="field">
+          <label>Artist (optional)</label>
+          <input id="artist-input" type="text" placeholder="Auto-detect" />
+        </div>
+        <div class="field">
+          <label>Album (optional)</label>
+          <input id="album-input" type="text" placeholder="Auto-detect" />
+        </div>
+        <div class="field">
+          <label>Start time</label>
+          <input id="start-input" type="text" placeholder="00:00:00" />
+        </div>
+        <div class="field">
+          <label>End time</label>
+          <input id="end-input" type="text" placeholder="end of video" />
+        </div>
+        <div class="field">
+          <label>Format</label>
+          <select id="format-select">
+            <option value="mp4">MP4 — video</option>
+            <option value="mp3">MP3 — audio only</option>
+            <option value="webm">WebM — video</option>
+            <option value="m4a">M4A — audio only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quality</label>
+          <select id="quality-select">
+            <option value="best">Best available</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+            <option value="360p">360p</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue panel -->
+  <div class="panel">
+    <div class="panel-header" style="justify-content: space-between;">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <div class="panel-dot" style="background: var(--blue);"></div>
+        <h2>Queue</h2>
+        <span id="queue-count" style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:4px;"></span>
+      </div>
+      <button onclick="clearDone()" style="background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;cursor:pointer;padding:0.2rem 0.5rem;border-radius:4px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">clear done</button>
+    </div>
+    <div class="panel-body" style="padding-top:1rem;">
+      <div class="queue-list" id="queue-list">
+        <div class="empty-state" id="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <div>No downloads queued yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ─── Config ───────────────────────────────────────────────
+  // Change this to your FastAPI host if different
+  const API = window.API_BASE || '';
+
+  // ─── State ────────────────────────────────────────────────
+  let queue = [];
+  let pollTimer = null;
+
+  // ─── Init ─────────────────────────────────────────────────
+  checkHealth();
+  loadQueueFromAPI();
+  setInterval(pollActive, 2500);
+
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${API}/health`);
+      if (r.ok) setOnline(true);
+      else setOnline(false);
+    } catch { setOnline(false); }
+  }
+
+  function setOnline(on) {
+    const dot = document.getElementById('status-dot');
+    const lbl = document.getElementById('service-status');
+    dot.style.background = on ? 'var(--green)' : 'var(--red)';
+    dot.style.boxShadow = on ? '0 0 6px var(--green)' : '0 0 6px var(--red)';
+    lbl.textContent = on ? 'online' : 'offline';
+  }
+
+  // ─── Add download ─────────────────────────────────────────
+  async function addDownload() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) { showToast('Paste a YouTube URL first'); return; }
+
+    const payload = {
+      url,
+      title:  document.getElementById('title-input').value.trim()  || null,
+      artist: document.getElementById('artist-input').value.trim() || null,
+      album:  document.getElementById('album-input').value.trim()  || null,
+      start:  document.getElementById('start-input').value.trim()  || null,
+      end:    document.getElementById('end-input').value.trim()    || null,
+      format:  document.getElementById('format-select').value,
+      quality: document.getElementById('quality-select').value,
+    };
+
+    const btn = document.getElementById('add-btn');
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+      const r = await fetch(`${API}/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        showToast(err.detail || `Error ${r.status}`);
+        return;
+      }
+
+      const job = await r.json();
+      addToQueue(job);
+      document.getElementById('url-input').value = '';
+      document.getElementById('title-input').value = '';
+      document.getElementById('artist-input').value = '';
+      document.getElementById('album-input').value = '';
+      document.getElementById('start-input').value = '';
+      document.getElementById('end-input').value = '';
+    } catch (e) {
+      // Offline / CORS — add optimistically so the UI isn't dead
+      const fakeJob = {
+        id: `local-${Date.now()}`,
+        url: payload.url,
+        title: payload.title || extractTitle(payload.url),
+        thumbnail: null,
+        status: 'waiting',
+        progress: 0,
+        format: payload.format,
+      };
+      addToQueue(fakeJob);
+      document.getElementById('url-input').value = '';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Queue';
+    }
+  }
+
+  function extractTitle(url) {
+    try {
+      const u = new URL(url);
+      return u.searchParams.get('v') || 'Unknown video';
+    } catch { return 'Unknown video'; }
+  }
+
+  // ─── Load existing queue from API ─────────────────────────
+  async function loadQueueFromAPI() {
+    try {
+      const r = await fetch(`${API}/queue`);
+      if (!r.ok) return;
+      const jobs = await r.json();
+      queue = [];
+      document.getElementById('queue-list').innerHTML = '';
+      jobs.forEach(job => addToQueue(job));
+    } catch { /* offline – silent */ }
+  }
+
+  // ─── Poll active jobs ─────────────────────────────────────
+  async function pollActive() {
+    const active = queue.filter(j => j.status === 'downloading' || j.status === 'waiting' || j.status === 'fetching');
+    for (const job of active) {
+      try {
+        const r = await fetch(`${API}/status/${job.id}`);
+        if (!r.ok) continue;
+        const updated = await r.json();
+        Object.assign(job, updated);
+        renderItem(job);
+      } catch { /* silent */ }
+    }
+  }
+
+  // ─── Queue management ─────────────────────────────────────
+  function addToQueue(job) {
+    queue.push(job);
+    renderQueue();
+  }
+
+  function clearDone() {
+    queue = queue.filter(j => j.status !== 'done' && j.status !== 'error');
+    renderQueue();
+  }
+
+  function removeItem(id) {
+    queue = queue.filter(j => j.id !== id);
+    fetch(`${API}/cancel/${id}`, { method: 'DELETE' }).catch(() => {});
+    renderQueue();
+  }
+
+  // ─── Render ───────────────────────────────────────────────
+  function renderQueue() {
+    const list = document.getElementById('queue-list');
+    const empty = document.getElementById('empty-state');
+    const count = document.getElementById('queue-count');
+
+    if (queue.length === 0) {
+      list.innerHTML = '';
+      list.appendChild(empty);
+      count.textContent = '';
+      return;
+    }
+
+    count.textContent = `(${queue.length})`;
+
+    // Re-render all items
+    const existingEmpty = list.querySelector('.empty-state');
+    if (existingEmpty) list.removeChild(existingEmpty);
+
+    queue.forEach(job => {
+      if (!document.getElementById(`item-${job.id}`)) {
+        const el = buildItem(job);
+        list.prepend(el);
+      } else {
+        renderItem(job);
+      }
+    });
+
+    // Remove stale DOM nodes
+    const ids = new Set(queue.map(j => j.id));
+    list.querySelectorAll('.queue-item').forEach(el => {
+      const id = el.id.replace('item-', '');
+      if (!ids.has(id)) el.remove();
+    });
+  }
+
+  function buildItem(job) {
+    const div = document.createElement('div');
+    div.className = 'queue-item';
+    div.id = `item-${job.id}`;
+    div.innerHTML = itemHTML(job);
+    return div;
+  }
+
+  function renderItem(job) {
+    const el = document.getElementById(`item-${job.id}`);
+    if (!el) return;
+    el.innerHTML = itemHTML(job);
+  }
+
+  function itemHTML(job) {
+    const thumbHTML = job.thumbnail
+      ? `<img class="thumb" src="${job.thumbnail}" alt="" loading="lazy" />`
+      : `<div class="thumb-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`;
+
+    const { cls, label } = statusBadge(job.status);
+
+    const progressHTML = (job.status === 'downloading' && typeof job.progress === 'number')
+      ? `<div class="progress-bar"><div class="progress-fill" style="width:${job.progress}%;background:var(--accent);"></div></div>`
+      : job.status === 'done'
+      ? `<div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--green);"></div></div>`
+      : `<div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>`;
+
+    const meta = [job.format?.toUpperCase(), job.quality].filter(Boolean).join(' · ');
+
+    return `
+      ${thumbHTML}
+      <div class="item-info">
+        <div class="item-title">${escHtml(job.title || job.url)}</div>
+        <div class="item-meta">${escHtml(meta)}${job.status === 'downloading' && job.progress != null ? ` · ${Math.round(job.progress)}%` : ''}</div>
+        ${progressHTML}
+      </div>
+      <span class="badge ${cls}">${label}</span>
+      <button class="remove-btn" onclick="removeItem('${job.id}')" title="Remove">✕</button>
+    `;
+  }
+
+  function statusBadge(status) {
+    return {
+      waiting:     { cls: 'badge-waiting',     label: 'waiting' },
+      fetching:    { cls: 'badge-fetching',     label: 'fetching' },
+      downloading: { cls: 'badge-downloading',  label: 'downloading' },
+      done:        { cls: 'badge-done',         label: 'done ✓' },
+      error:       { cls: 'badge-error',        label: 'error' },
+    }[status] || { cls: 'badge-waiting', label: status };
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ─── Toast ────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+
+  // ─── Video ID extraction ──────────────────────────────────────────────────
+  function extractVideoId(url) {
+    try {
+      const u = new URL(url);
+      if (u.searchParams.get('v')) return u.searchParams.get('v');
+      if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+      const em = u.pathname.match(/\/embed\/([^/?]+)/);
+      if (em) return em[1];
+      const sh = u.pathname.match(/\/shorts\/([^/?]+)/);
+      if (sh) return sh[1];
+    } catch {}
+    return null;
+  }
+
+  // ─── Auto-fill from /info ────────────────────────────────────────────────
+  let infoDebounceTimer = null;
+
+  function fetchVideoInfo(url) {
+    clearTimeout(infoDebounceTimer);
+    infoDebounceTimer = setTimeout(async () => {
+      const id = extractVideoId(url.trim());
+      if (!id) return;
+
+      // Show a subtle loading state on the time fields
+      const startEl = document.getElementById('start-input');
+      const endEl   = document.getElementById('end-input');
+      startEl.placeholder = 'loading…';
+      endEl.placeholder   = 'loading…';
+
+      try {
+        const r = await fetch(`${API}/info?url=${encodeURIComponent(url.trim())}`);
+        if (!r.ok) return;
+        const info = await r.json();
+
+        // Only fill fields if the user hasn't typed in them manually
+        if (!document.getElementById('title-input').value && info.title)
+          document.getElementById('title-input').value = info.title;
+        if (!document.getElementById('artist-input').value && info.artist)
+          document.getElementById('artist-input').value = info.artist;
+        if (info.start !== null)
+          startEl.value = info.start;
+        if (info.end !== null)
+          endEl.value = info.end;
+      } catch {
+        // silent — not critical
+      } finally {
+        startEl.placeholder = '00:00:00';
+        endEl.placeholder   = 'end of video';
+      }
+    }, 600); // debounce so we don't fire on every keystroke
+  }
+
+  // ─── Preview ──────────────────────────────────────────────────────────────
+  function updatePreview(url) {
+    const id          = extractVideoId(url.trim());
+    const placeholder = document.getElementById('preview-placeholder');
+    const iframe      = document.getElementById('preview-iframe');
+    if (id) {
+      iframe.src                = `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+      iframe.style.display      = 'block';
+      placeholder.style.display = 'none';
+      fetchVideoInfo(url);
+    } else {
+      iframe.src                = '';
+      iframe.style.display      = 'none';
+      placeholder.style.display = 'flex';
+      // Clear auto-filled fields when URL is removed
+      document.getElementById('start-input').value = '';
+      document.getElementById('end-input').value   = '';
+    }
+  }
+
+  // ─── URL input listeners ──────────────────────────────────────────────────
+  const urlInput = document.getElementById('url-input');
+  urlInput.addEventListener('input', e => updatePreview(e.target.value));
+  urlInput.addEventListener('paste', e => {
+    const pasted = (e.clipboardData || window.clipboardData).getData('text');
+    updatePreview(pasted);
+  });
+  urlInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addDownload();
+  });
+</script>
+</body>
+</html>
