@@ -1,0 +1,8 @@
+
+# Ignore environment variable files
+.env
+
+# Ignore Docker volumes for Jellyfin server
+docker/jellyfin/config/
+docker/jellyfin/cache/
+docker/jellyfin/media/
