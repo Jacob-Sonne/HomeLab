@@ -1,0 +1,24 @@
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+
+    ports:
+      - "53:53/tcp"     # DNS
+      - "53:53/udp"     # DNS
+      - "3000:3000/tcp" # AdGuard Home Setup UI. Once setup, data will be saved in ./conf and ./work. Can be removed or changed to 127.0.0.1:3000:3000/tcp to only allow access from the host machine.
+      - "8080:80/tcp"     # HTTP (being used by Nginx)
+      #- "443:443/tcp"   # HTTPS (being used by Nginx)
+
+    volumes:
+      - ./conf:/opt/adguardhome/conf
+      - ./work:/opt/adguardhome/work
+
+    restart: unless-stopped
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

@@ -13,7 +13,39 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+
+# LaTeX build files
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+
 # Ignore Docker volumes for Jellyfin server
 docker/jellyfin/config/
 docker/jellyfin/cache/
 docker/jellyfin/media/
+
+# Kavita configs
+docker/kavita/config/
+
+# Suwayomi data
+docker/suwayomi/data/
+
+# AdGuard Home
+docker/adguard/conf/*
+docker/adguard/work/*
+# BUT keep these placeholder files. To keep the folder???
+#!docker/adguard/conf/.gitkeep
+#!docker/adguard/work/.gitkeep

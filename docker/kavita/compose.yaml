@@ -1,0 +1,22 @@
+services:
+  kavita:
+    image: jvmilazz0/kavita:latest
+    container_name: kavita
+
+    volumes:
+        - C:/Users/Sonne/GitRepos/HomeLab/docker/jellyfin/media/manga:/manga
+        - C:/Users/Sonne/GitRepos/HomeLab/docker/jellyfin/media/comics:/comics
+        - C:/Users/Sonne/GitRepos/HomeLab/docker/jellyfin/media/books:/books
+        - ./config:/kavita/config
+
+    restart: unless-stopped
+
+    environment:
+      - TZ=Europe/Copenhagen
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

@@ -1,0 +1,52 @@
+---
+# https://github.com/Suwayomi/Suwayomi-Server-docker/blob/main/docker-compose.yml
+# https://github.com/Suwayomi/tachiyomi-extension
+
+services:
+  suwayomi:
+    container_name: manga
+    image: ghcr.io/suwayomi/suwayomi-server:preview
+    # user: 1000:1000
+    environment:
+      - TZ=Etc/UTC # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      # Comment these out if you do not use the flaresolverr container at the bottom of this file
+      - FLARESOLVERR_ENABLED=true
+      - FLARESOLVERR_URL=http://flaresolverr:8191
+#  #################################################################################################
+#
+#    !!! IMPORTANT !!!
+#     - server settings can be changed during runtime in the WebUI
+#     - providing an environment variable will OVERWRITE the current setting value when starting the container
+#
+#  #################################################################################################
+#
+#    example for setting env vars:
+#
+#      - BIND_IP=0.0.0.0
+#      - BIND_PORT=4567
+#      - SOCKS_PROXY_ENABLED=false
+#      - DOWNLOAD_AS_CBZ=true
+#      - AUTH_MODE=basic_auth
+#      - AUTH_USERNAME=manga
+#      - AUTH_PASSWORD=hello123
+#      - EXTENSION_REPOS=["http://github.com/orginazation-name/repo-name", "http://github.com/orginazation-name-2/repo-name-2"]
+    volumes:
+      - ./data:/home/suwayomi/.local/share/Tachidesk
+      - C:\Users\Sonne\GitRepos\HomeLab\docker\jellyfin\media\manga:/manga
+    restart: on-failure:3
+    networks:
+      - homelab
+
+  flaresolverr:
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: flaresolverr
+    init: true
+    environment:
+      - TZ=Etc/UTC # Use TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    restart: unless-stopped
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

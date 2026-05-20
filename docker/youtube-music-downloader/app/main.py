@@ -27,7 +27,7 @@ app.add_middleware(
 
 @app.get("/")
 def index():
-    return FileResponse("/app/app/templates/index.html")
+    return FileResponse("/app/app/templates/mainpage.html")
 
 
 # ── In-memory job store ───────────────────────────────────────────────────────

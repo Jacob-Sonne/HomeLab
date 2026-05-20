@@ -1,0 +1,53 @@
+\documentclass{article}
+
+\title{Homelab Documentation}
+\author{Jacob Sonne}
+
+\begin{document}
+
+% --- Front page ---
+\maketitle
+
+% --- Table of contents ---
+\tableofcontents
+\newpage
+
+% --- Services ---
+\section{Services}
+This section documents the core services running in the homelab environment. Each service is containerized using Docker and connected through a shared internal network to enable secure and controlled communication between components.
+\\\\
+Each service is described with its role, configuration notes, and how it interacts with other services in the system.
+% --- Network and Core Infrastructure
+\subsection{Networking and Core Infrastructure}
+\subsubsection{Adguard Home}
+\input{Services/adguardhome.tex}
+
+\subsubsection{WireGuard}
+\input{Services/wireguard.tex}
+
+\subsubsection{Nginx}
+\input{Services/nginx.tex}
+
+% --- Media Platforms
+\subsection{Media Platforms}
+\subsubsection{Jellyfin}
+\input{Services/jellyfin}
+\subsubsection{kavita}
+\input{Services/kavita}
+\subsubsection{Audiobookshelf}
+\input{Services/audiobookshelf}
+
+\subsection{Automation Tools}
+\subsubsection{Youtube Music Downloader}
+\input{Services/youtubemusicdownloader.tex}
+\subsubsection{Manga Downloader}
+\input{Services/mangadownloader.tex}
+\subsubsection{Developer Tools}
+\input{Services/developertools.tex}
+
+% --- TODO ---
+\section{TODO}
+In this section I describe future additions or modifications to the homelab server.
+...
+
+\end{document}

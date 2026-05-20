@@ -1,94 +1,505 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Music Downloader</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <style>
-        body {
-            font-family: Arial;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #f6f6f6;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .container {
-            width: 600px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+    :root {
+      --bg: #0e0f11;
+      --surface: #16181c;
+      --surface2: #1e2128;
+      --border: #2a2d35;
+      --border-accent: #3a3d48;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --accent: #f5a623;
+      --accent-dim: #3d2b0a;
+      --red: #e05252;
+      --green: #4caf7d;
+      --blue: #5b9cf6;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
 
-        .job {
-            padding: 10px;
-            border: 1px solid #ddd;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
 
-        img {
-            height: 60px;
-        }
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
 
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-        }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+    }
 
-        .timetextfield {
-            width: 30px;
-        }
+    .logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
 
-        button {
-            padding: 10px;
-            width: 100%;
-            cursor: pointer;
-        }
-    </style>
+    .logo span { color: var(--muted); font-weight: 400; }
+
+    .status-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ---- Input panel ---- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface2);
+    }
+
+    .panel-header h2 {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+
+    .panel-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .panel-body { padding: 1.25rem; }
+
+    .url-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+    .url-input:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0e0f11;
+      border: none;
+      border-radius: 7px;
+      padding: 0.75rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Settings grid */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 600px) {
+      .settings-grid { grid-template-columns: 1fr; }
+      .url-row { flex-direction: column; }
+    }
+
+    .field label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-accent);
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field select { cursor: pointer; }
+    .field select option { background: var(--surface2); }
+
+    /* ---- Queue ---- */
+    .queue-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .queue-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .thumb {
+      width: 80px;
+      height: 48px;
+      border-radius: 5px;
+      object-fit: cover;
+      background: var(--border);
+      flex-shrink: 0;
+      border: 1px solid var(--border-accent);
+    }
+
+    .thumb-placeholder {
+      width: 80px;
+      height: 48px;
+      border-radius: 5px;
+      background: var(--border);
+      border: 1px solid var(--border-accent);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thumb-placeholder svg { opacity: 0.3; }
+
+    .item-info { flex: 1; min-width: 0; }
+
+    .item-title {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.3rem;
+    }
+
+    .item-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge-waiting  { background: #1e2128; color: var(--muted); border: 1px solid var(--border-accent); }
+    .badge-fetching { background: #1a2340; color: var(--blue); border: 1px solid #2a3d6a; }
+    .badge-downloading { background: var(--accent-dim); color: var(--accent); border: 1px solid #5a3d10; }
+    .badge-done     { background: #0e2a1c; color: var(--green); border: 1px solid #1a4d30; }
+    .badge-error    { background: #2a0e0e; color: var(--red); border: 1px solid #5a1a1a; }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+      font-size: 16px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: var(--red); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .empty-state svg { opacity: 0.15; margin-bottom: 1rem; }
+
+    .preview-container {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      background: var(--bg);
+      border: 1px dashed var(--border-accent);
+    }
+    .preview-container iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .preview-placeholder svg { opacity: 0.2; margin-bottom: 0.25rem; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--red);
+      z-index: 9999;
+      animation: fadeUp 0.2s ease;
+      max-width: 340px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 1.25rem 0 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+  </style>
 </head>
 <body>
 
-<div class="container">
+<main>
+    <div class="panel">
+        <div class="panel-body">
 
-<h2>YouTube → Jellyfin Downloader</h2>
+            <!--- Youtube Preview -->
+            <div class="preview-container">
+                <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                <div class="preview-placeholder" id="preview-placeholder">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="3" width="20" height="14" rx="2"/><polygon points="10 8 16 11 10 14 10 8" fill="currentColor" stroke="none"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    paste a youtube url to preview
+                </div>
+            </div>
 
-<!-- Preview area -->
-<div id="preview"></div>
+            <!--- Download Settings -->
 
-<!-- Input Form -->
-<form hx-post="/add" hx-target="#job-list" hx-swap="innerHTML">
+            <div class="url-row">
+                <input
+                    class="url-input"
+                    id="url-input"
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=…"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <button class="btn-primary" id="add-btn" onclick="addDownload()">ADD</button>
+            </div>
+            
+            <div class="section-title">Download Settings</div>
+            <div class="settings-grid">
+                <div class="field">
+                    <label>Start time</label>
+                    <input id="start-input" type="numeric" placeholder="00:00:00" autocomplete="off"/>
+                </div>
+                <div class="field">
+                    <label>Start time</label>
+                    <input id="start-input" type="numeric" placeholder="00:00:00" autocomplete="off"/>
+                </div>
+            </div>
 
-    <div style="display:flex; gap:10px;">
-        <input name="url" placeholder="YouTube URL"
-            hx-get="/preview"
-            hx-trigger="keyup changed delay:800ms"
-            hx-target="#preview">
-        <button type="submit">Download</button>
+
+        </div>
     </div>
-    
 
-
-    <div style="display:flex; gap:10px;">
-        <input class="timetextfield" name="start" inputmode="numeric" placeholder="Start time (e.g. 0:00)" value="0:00">
-        <input name="title" placeholder="Custom title (optional)">
-        <input class="timetextfield" name="end" placeholder="0.0">
+    <!-- Queue panel -->
+    <div class="panel">
+        <div class="panel-header" style="justify-content: space-between;"></div>
+        <div class="panel-body" style="padding-top:1rem;">
+            <div class="queue-list" id="queue-list">
+                <div class="empty-state" id="empty-state">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <div>No downloads queued yet</div>
+                </div>
+            </div>
+        </div>
     </div>
-</form>
 
-<h3>Music Download Queue</h3>
-<div id="job-list"
-     hx-get="/jobs"
-     hx-trigger="load, every 2s"
-     hx-swap="innerHTML">
-</div>
+</main>
 
-</div>
+<script>
+    const startInput = document.getElementById("start-input");
+    createTimeInput(startInput);
 
+    function divideWithRemainder(value, limit) {
+        const carry = Math.floor(value / limit);
+        const remainder = value % limit;
+
+        return { carry, remainder };
+    }
+
+    function formatTime(value) {
+        let digits = value.replace(/\D/g, "")   // remove non-digit characters
+                        .slice(-6)              // keep only last 6 digits (hhmmss)
+        
+        let ss  = Number(digits.slice(-2) || 0);
+        let {carry: carryMinutes, remainder: seconds} = divideWithRemainder(ss, 60);
+
+        let mm  = Number(digits.slice(-4, -2) || 0) + carryMinutes;
+        let {carry: carryHours, remainder: minutes} = divideWithRemainder(mm, 60);
+
+        let hh  = Number(digits.slice(-6, -4) || 0) + carryHours;
+        let hours = Math.min(hh, 23); // cap hours at 23
+
+        let hoursStr = hours > 0 ? `${hours.toString().padStart(2, "0")}:` : "";
+        let minutesStr = minutes > 0 ? `${minutes.toString().padStart(2, "0")}:` : "";
+        let secondsStr = seconds > 0 ? `${seconds.toString().padStart(2, "0")}` : "";
+
+        return `${hoursStr}${minutesStr}${secondsStr}`;
+    }
+
+    function createTimeInput(selector) {
+        const input = typeof selector === "string" 
+            ? document.querySelector(selector) 
+            : selector instanceof HTMLElement 
+                ? selector 
+                : null;
+
+        if (!input) throw new Error("Input element not found");
+
+        input.addEventListener("input", (e) => {
+            const el = e.target;
+
+            const start = el.selectionStart;
+
+            const oldLength = el.value.length;
+
+            const formatted = formatTime(el.value);
+
+            el.value = formatted;
+
+            const newLength = formatted.length;
+
+            const newPos = Math.max(0, start + (newLength - oldLength));
+
+            el.setSelectionRange(newPos, newPos);
+        })
+    }
+
+
+  function addDownload() {
+    const urlInput = document.getElementById('url-input');
+    const url = urlInput.value.trim();
+    if (!url) return;
+  }
+</script>
 </body>
 </html>

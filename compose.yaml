@@ -1,0 +1,11 @@
+include:
+  - ./docker/jellyfin/compose.yaml
+  - ./docker/youtube-music-downloader/compose.yaml
+  - ./docker/nginx/compose.yaml
+  - ./docker/kavita/compose.yaml
+  - ./docker/adguard/compose.yaml
+  - ./docker/suwayomi/compose.yaml
+
+networks:
+  homelab:
+    external: true

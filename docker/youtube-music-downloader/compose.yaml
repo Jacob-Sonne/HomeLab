@@ -1,10 +1,16 @@
 services:
   downloader:
+    container_name: youtube-downloader
     build: .
-    ports:
-      - "8000:8000"
 
     volumes:
-      - ../jellyfin/media/Music:/music
+      - ../jellyfin/media/music:/music
 
     restart: unless-stopped
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
