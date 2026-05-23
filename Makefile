@@ -26,12 +26,15 @@ clean:
 
 # Start the jellyfin service
 jellyfin:
+	docker compose -f ./docker/nginx/compose.yaml up -d
 	docker compose -f ./docker/jellyfin/compose.yaml up -d
 
 # Start the kavita service
 kavita:
+	docker compose -f ./docker/nginx/compose.yaml up -d
 	docker compose -f ./docker/kavita/compose.yaml up -d
 
 # Start the suwayomi service
 suwayomi:
+	docker compose -f ./docker/nginx/compose.yaml up -d
 	docker compose -f ./docker/suwayomi/compose.yaml up -d
